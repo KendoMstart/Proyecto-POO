@@ -1,0 +1,36 @@
+plugins {
+    id 'java'
+    id 'application'
+}
+
+version = '1.0'
+sourceCompatibility = '17'
+targetCompatibility = '17'
+
+ext {
+    gdxVersion = '1.12.1'
+}
+
+repositories {
+    mavenCentral()
+    maven { url 'https://oss.sonatatype.org/content/repositories/snapshots/' }
+    maven { url 'https://oss.sonatatype.org/content/repositories/releases/' }
+}
+
+dependencies {
+    implementation "com.badlogicgames.gdx:gdx:$gdxVersion"
+    implementation "com.badlogicgames.gdx:gdx-backend-lwjgl3:$gdxVersion"
+    implementation "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-desktop"
+    
+    implementation "com.badlogicgames.gdx:gdx-box2d:$gdxVersion"
+    implementation "com.badlogicgames.gdx:gdx-box2d-platform:$gdxVersion:natives-desktop"
+}
+
+application {
+    mainClass = 'ProyectoPOO.App'
+}
+sourceSets.main.resources.srcDirs = ['src/main/resources', 'assets']
+
+processResources {
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
+}
