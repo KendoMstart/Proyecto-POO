@@ -18,6 +18,7 @@ public class PantallaJuego implements Screen {
     private Stage stage;
     private SpriteBatch batch;
     private Texture pisoTexture;
+    private Texture barraTexture;
     private Personaje jugador;
     private final float alturaPiso = 100f; // Altura en píxeles del piso verde
 
@@ -32,6 +33,14 @@ public class PantallaJuego implements Screen {
         pisoPixmap.fill();
         pisoTexture = new Texture(pisoPixmap);
         pisoPixmap.dispose();
+
+        // Textura blanca para dibujar la barra de stamina
+        Pixmap barraPixmap = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
+        barraPixmap.setColor(Color.WHITE);
+        barraPixmap.fill();
+
+        barraTexture = new Texture(barraPixmap);
+        barraPixmap.dispose();
 
         // Creamos al personaje justo sobre la altura del piso (100)
         jugador = new Personaje(150, alturaPiso, 48, 64, "personaje.png");
@@ -62,6 +71,38 @@ public class PantallaJuego implements Screen {
         
         // Dibujar personaje
         jugador.render(batch);
+
+        // Barra visual de stamina
+        float porcentajeStamina =
+                jugador.getStamina() / jugador.getStaminaMaxima();
+
+        float barraX = 20f;
+        float barraY = Gdx.graphics.getHeight() - 70f;
+        float barraAncho = 200f;
+        float barraAlto = 18f;
+
+        // Fondo oscuro de la barra
+        batch.setColor(Color.DARK_GRAY);
+        batch.draw(barraTexture, barraX, barraY,
+                   barraAncho, barraAlto);
+
+        // Cambiar el color según la stamina disponible
+        if (porcentajeStamina >= 0.50f) {
+            batch.setColor(Color.GREEN);
+        } else if (porcentajeStamina >= 0.25f) {
+            batch.setColor(Color.YELLOW);
+        } else {
+            batch.setColor(Color.RED);
+        }
+
+        // Dibujar la energía disponible
+        batch.draw(barraTexture, barraX, barraY,
+                   barraAncho * porcentajeStamina, barraAlto);
+
+        // Restaurar el color para no afectar otros dibujos
+        batch.setColor(Color.WHITE);
+
+
         batch.end();
 
         stage.act(Math.min(Gdx.graphics.getDeltaTime(), 1 / 30f));
@@ -84,5 +125,6 @@ public class PantallaJuego implements Screen {
         batch.dispose();
         if (pisoTexture != null) pisoTexture.dispose();
         if (jugador != null) jugador.dispose();
+        if (barraTexture != null) barraTexture.dispose();
     }
 }

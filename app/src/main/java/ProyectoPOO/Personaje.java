@@ -20,6 +20,16 @@ public class Personaje {
     private final float GRAVEDAD = -1200f;        // Fuerza de atracción hacia abajo
     private boolean enSuelo = false;
 
+    // Sistema de stamina
+    private float stamina = 100f;
+    private final float STAMINA_MAXIMA = 100f;
+    private final float CONSUMO_STAMINA = 25f;
+    private final float RECUPERACION_STAMINA = 15f;
+
+    // Velocidad al correr
+    private final float VELOCIDAD_CORRER = 550f;
+
+
     public Personaje(float x, float y, float ancho, float alto, String nombreArchivo) {
         this.x = x;
         this.y = y;
@@ -44,12 +54,37 @@ public class Personaje {
     public void actualizar(float delta, float alturaPiso) {
         // 1. Control de movimiento horizontal con A y D
         velocidadX = 0;
-        if (Gdx.input.isKeyPressed(Input.Keys.A) || Gdx.input.isKeyPressed(Input.Keys.LEFT)) {
+
+        if (Gdx.input.isKeyPressed(Input.Keys.A) ||
+            Gdx.input.isKeyPressed(Input.Keys.LEFT)) {
             velocidadX = -VELOCIDAD_CAMINAR;
         }
-        if (Gdx.input.isKeyPressed(Input.Keys.D) || Gdx.input.isKeyPressed(Input.Keys.RIGHT)) {
+
+        if (Gdx.input.isKeyPressed(Input.Keys.D) ||
+            Gdx.input.isKeyPressed(Input.Keys.RIGHT)) {
             velocidadX = VELOCIDAD_CAMINAR;
         }
+
+        // Sistema de stamina para correr con Shift
+        boolean moviendose = velocidadX != 0;
+
+        boolean shiftPresionado =
+                Gdx.input.isKeyPressed(Input.Keys.SHIFT_LEFT) ||
+                Gdx.input.isKeyPressed(Input.Keys.SHIFT_RIGHT);
+
+        if (shiftPresionado && moviendose && stamina > 0) {
+            // Correr más rápido en ambas direcciones
+            velocidadX = Math.signum(velocidadX) * VELOCIDAD_CORRER;
+
+            // Consumir stamina
+            stamina -= CONSUMO_STAMINA * delta;
+        } else {
+            // Recuperar stamina
+            stamina += RECUPERACION_STAMINA * delta;
+        }
+
+        // Mantener stamina entre 0 y 100
+        stamina = Math.max(0, Math.min(stamina, STAMINA_MAXIMA));
 
         // 2. Control de salto con W o FLECHA ARRIBA
         if ((Gdx.input.isKeyJustPressed(Input.Keys.W) || Gdx.input.isKeyJustPressed(Input.Keys.UP)) && enSuelo) {
@@ -89,4 +124,15 @@ public class Personaje {
             textura.dispose();
         }
     }
+
+    // Devuelve la stamina actual del personaje
+    public float getStamina() {
+        return stamina;
+    }
+
+    // Devuelve la cantidad máxima de stamina
+    public float getStaminaMaxima() {
+        return STAMINA_MAXIMA;
+    }
+
 }
