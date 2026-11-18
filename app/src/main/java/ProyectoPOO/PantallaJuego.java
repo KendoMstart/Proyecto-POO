@@ -1,4 +1,3 @@
-
 package ProyectoPOO;
 
 import com.badlogic.gdx.Gdx;
@@ -26,11 +25,12 @@ public class PantallaJuego implements Screen {
     private ShapeRenderer shapeRenderer;
     private Label titleLabel;
 
-    // Textura blanca para la barra de stamina
+    // Barra de stamina
     private Texture barraTexture;
 
-    // Personaje
+    // Personaje y poción
     private Personaje jugador;
+    private PocionStamina pocion;
 
     // Escenarios disponibles
     private final Escenario[] escenarios = {
@@ -41,7 +41,7 @@ public class PantallaJuego implements Screen {
 
     private Escenario escenario;
 
-    // Constructor para seleccionar un escenario
+    // Constructor principal
     public PantallaJuego(Main game, Escenario escenario) {
         this.game = game;
         this.escenario = escenario;
@@ -50,7 +50,7 @@ public class PantallaJuego implements Screen {
         batch = new SpriteBatch();
         shapeRenderer = new ShapeRenderer();
 
-        // Textura blanca para la barra de stamina
+        // Crear textura blanca para la barra
         Pixmap barraPixmap = new Pixmap(
             1, 1, Pixmap.Format.RGBA8888
         );
@@ -70,6 +70,13 @@ public class PantallaJuego implements Screen {
             "personaje.png"
         );
 
+        // Crear poción sobre el piso del escenario
+        pocion = new PocionStamina(
+            500,
+            escenario.getAlturaPiso()
+        );
+
+        // Interfaz de texto
         Table table = new Table();
         table.setFillParent(true);
         stage.addActor(table);
@@ -86,12 +93,12 @@ public class PantallaJuego implements Screen {
         table.add(titleLabel);
     }
 
-    // Constructor utilizado por el menú principal
+    // Constructor usado por el menú
     public PantallaJuego(Main game) {
         this(game, new EscenarioPradera());
     }
 
-    // Cambiar entre los tres escenarios
+    // Cambiar escenario
     private void cambiarEscenario(int indice) {
         escenario = escenarios[indice];
         actualizarTexto();
@@ -109,7 +116,7 @@ public class PantallaJuego implements Screen {
     @Override
     public void render(float delta) {
 
-        // Cambio de escenarios con teclas 1, 2 y 3
+        // Cambiar escenarios con 1, 2 y 3
         if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_1)) {
             cambiarEscenario(0);
         }
@@ -122,11 +129,34 @@ public class PantallaJuego implements Screen {
             cambiarEscenario(2);
         }
 
-        // Actualizar movimiento y stamina del personaje
+        // Actualizar movimiento y stamina
         jugador.actualizar(
             delta,
             escenario.getAlturaPiso()
         );
+
+        // Detectar colisión con la poción
+        if (!pocion.estaRecogida()) {
+
+            float jugadorX = jugador.getX();
+            float jugadorY = jugador.getY();
+            float jugadorAncho = jugador.getAncho();
+            float jugadorAlto = jugador.getAlto();
+
+            boolean colision =
+                jugadorX < pocion.getX() + pocion.getAncho() &&
+                jugadorX + jugadorAncho > pocion.getX() &&
+                jugadorY < pocion.getY() + pocion.getAlto() &&
+                jugadorY + jugadorAlto > pocion.getY();
+
+            if (colision) {
+                pocion.recoger(jugador);
+
+                System.out.println(
+                    "¡Poción recogida! +50 de stamina"
+                );
+            }
+        }
 
         // Color del cielo según el escenario
         Color cielo = escenario.getColorCielo();
@@ -141,7 +171,9 @@ public class PantallaJuego implements Screen {
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
         // Dibujar escenario
-        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+        shapeRenderer.begin(
+            ShapeRenderer.ShapeType.Filled
+        );
 
         escenario.dibujar(
             shapeRenderer,
@@ -151,13 +183,14 @@ public class PantallaJuego implements Screen {
 
         shapeRenderer.end();
 
-        // Dibujar personaje
+        // Dibujar personaje y poción
         batch.begin();
         batch.setColor(Color.WHITE);
 
         jugador.render(batch);
+        pocion.render(batch);
 
-        // Barra de stamina
+        // Calcular porcentaje de stamina
         float porcentajeStamina =
             jugador.getStamina() / jugador.getStaminaMaxima();
 
@@ -166,7 +199,7 @@ public class PantallaJuego implements Screen {
         float barraAncho = 200f;
         float barraAlto = 18f;
 
-        // Fondo oscuro
+        // Fondo de la barra
         batch.setColor(Color.DARK_GRAY);
 
         batch.draw(
@@ -177,7 +210,7 @@ public class PantallaJuego implements Screen {
             barraAlto
         );
 
-        // Color según el nivel de stamina
+        // Colores de stamina
         if (porcentajeStamina >= 0.50f) {
             batch.setColor(Color.GREEN);
         } else if (porcentajeStamina >= 0.25f) {
@@ -195,7 +228,7 @@ public class PantallaJuego implements Screen {
             barraAlto
         );
 
-        // Restaurar color
+        // Restaurar el color
         batch.setColor(Color.WHITE);
 
         batch.end();
@@ -245,6 +278,10 @@ public class PantallaJuego implements Screen {
 
         if (jugador != null) {
             jugador.dispose();
+        }
+
+        if (pocion != null) {
+            pocion.dispose();
         }
 
         if (barraTexture != null) {
