@@ -31,6 +31,7 @@ public class PantallaJuego implements Screen {
     // Personaje y poción
     private Personaje jugador;
     private PocionStamina pocion;
+    private BotasVelocidad botas;
 
     // Escenarios disponibles
     private final Escenario[] escenarios = {
@@ -73,6 +74,12 @@ public class PantallaJuego implements Screen {
         // Crear poción sobre el piso del escenario
         pocion = new PocionStamina(
             500,
+            escenario.getAlturaPiso()
+        );
+
+        // Crear botas de velocidad sobre el suelo
+        botas = new BotasVelocidad(
+            700,
             escenario.getAlturaPiso()
         );
 
@@ -158,6 +165,22 @@ public class PantallaJuego implements Screen {
             }
         }
 
+        // Detectar colisión con las botas de velocidad
+        if (!botas.estanRecogidas()) {
+
+            boolean colisionBotas =
+                jugador.getX() < botas.getX() + botas.getAncho() &&
+                jugador.getX() + jugador.getAncho() > botas.getX() &&
+                jugador.getY() < botas.getY() + botas.getAlto() &&
+                jugador.getY() + jugador.getAlto() > botas.getY();
+
+            if (colisionBotas) {
+                botas.recoger(jugador);
+                System.out.println("¡Botas recogidas! Velocidad extra durante 5 segundos");
+            }
+        }
+
+
         // Color del cielo según el escenario
         Color cielo = escenario.getColorCielo();
 
@@ -189,6 +212,7 @@ public class PantallaJuego implements Screen {
 
         jugador.render(batch);
         pocion.render(batch);
+        botas.render(batch);
 
         // Calcular porcentaje de stamina
         float porcentajeStamina =
@@ -230,6 +254,40 @@ public class PantallaJuego implements Screen {
 
         // Restaurar el color
         batch.setColor(Color.WHITE);
+
+        // Mostrar barra mientras las botas estén activas
+        if (jugador.tieneBotasActivas()) {
+
+            float porcentajeBotas =
+                jugador.getTiempoBotasRestante() / 5f;
+
+            float botasBarraX = 20f;
+            float botasBarraY = Gdx.graphics.getHeight() - 95f;
+            float botasBarraAncho = 200f;
+            float botasBarraAlto = 12f;
+
+            // Fondo oscuro
+            batch.setColor(Color.DARK_GRAY);
+            batch.draw(
+                barraTexture,
+                botasBarraX,
+                botasBarraY,
+                botasBarraAncho,
+                botasBarraAlto
+            );
+
+            // Duración restante en amarillo
+            batch.setColor(Color.YELLOW);
+            batch.draw(
+                barraTexture,
+                botasBarraX,
+                botasBarraY,
+                botasBarraAncho * porcentajeBotas,
+                botasBarraAlto
+            );
+
+            batch.setColor(Color.WHITE);
+        }
 
         batch.end();
 
