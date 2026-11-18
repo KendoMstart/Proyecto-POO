@@ -20,6 +20,7 @@ public class PantallaJuego implements Screen {
     private Texture pisoTexture;
     private Texture barraTexture;
     private Personaje jugador;
+    private PocionStamina pocion;
     private final float alturaPiso = 100f; // Altura en píxeles del piso verde
 
     public PantallaJuego(Main game) {
@@ -44,6 +45,9 @@ public class PantallaJuego implements Screen {
 
         // Creamos al personaje justo sobre la altura del piso (100)
         jugador = new Personaje(150, alturaPiso, 48, 64, "personaje.png");
+        
+        // Crear una poción de stamina sobre el suelo
+        pocion = new PocionStamina(500, alturaPiso);
 
         Table table = new Table();
         table.setFillParent(true);
@@ -60,6 +64,26 @@ public class PantallaJuego implements Screen {
         // Actualizamos la física del personaje enviándole el delta y la altura del piso
         jugador.actualizar(delta, alturaPiso);
 
+        // Detectar si el personaje toca la poción
+        if (!pocion.estaRecogida()) {
+
+            float jugadorX = jugador.getX();
+            float jugadorY = jugador.getY();
+            float jugadorAncho = jugador.getAncho();
+            float jugadorAlto = jugador.getAlto();
+
+            boolean colision =
+                    jugadorX < pocion.getX() + pocion.getAncho() &&
+                    jugadorX + jugadorAncho > pocion.getX() &&
+                    jugadorY < pocion.getY() + pocion.getAlto() &&
+                    jugadorY + jugadorAlto > pocion.getY();
+
+            if (colision) {
+                pocion.recoger(jugador);
+                System.out.println("¡Poción recogida! +50 de stamina");
+            }
+        }
+
         // Fondo Celeste (Cielo)
         Gdx.gl.glClearColor(0.53f, 0.81f, 0.92f, 1f);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
@@ -71,6 +95,9 @@ public class PantallaJuego implements Screen {
         
         // Dibujar personaje
         jugador.render(batch);
+
+        // Dibujar la poción
+        pocion.render(batch);
 
         // Barra visual de stamina
         float porcentajeStamina =

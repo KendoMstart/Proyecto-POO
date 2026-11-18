@@ -135,4 +135,28 @@ public class Personaje {
         return STAMINA_MAXIMA;
     }
 
+    // Recupera energía al recoger x poción
+    public void recuperarStamina(float cantidad) {
+        if (cantidad > 0) {
+            stamina = Math.min(stamina + cantidad, STAMINA_MAXIMA);
+        }
+    }
+
+    // Obtener posición y tamaño del personaje
+    public float getX() {
+        return x;
+    }
+
+    public float getY() {
+        return y;
+    }
+
+    public float getAncho() {
+        return ancho;
+    }
+
+    public float getAlto() {
+        return alto;
+    }
+
 }
