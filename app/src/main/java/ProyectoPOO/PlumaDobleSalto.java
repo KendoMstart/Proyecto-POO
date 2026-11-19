@@ -5,18 +5,12 @@ import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 
-public class PlumaDobleSalto {
-
-    private final float x, y;
-    private final float ancho = 30f;
-    private final float alto = 40f;
+public class PlumaDobleSalto extends Item {
 
     private Texture textura;
-    private boolean recogida = false;
 
     public PlumaDobleSalto(float x, float y) {
-        this.x = x;
-        this.y = y;
+        super(x, y, 30f, 40f);
 
         // Textura morada temporal para representar la pluma
         Pixmap pixmap = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
@@ -29,38 +23,23 @@ public class PlumaDobleSalto {
 
     // Dibujar la pluma si todavía no fue recogida
     public void render(SpriteBatch batch) {
-        if (!recogida) {
+        if (!recogido) {
             batch.setColor(Color.WHITE);
             batch.draw(textura, x, y, ancho, alto);
         }
     }
 
     // Activar el doble salto al recoger la pluma
+    @Override
     public void recoger(Personaje jugador) {
-        if (!recogida) {
+        if (!recogido) {
             jugador.activarDobleSalto();
-            recogida = true;
+            recogido = true;
         }
     }
 
     public boolean estaRecogida() {
-        return recogida;
-    }
-
-    public float getX() {
-        return x;
-    }
-
-    public float getY() {
-        return y;
-    }
-
-    public float getAncho() {
-        return ancho;
-    }
-
-    public float getAlto() {
-        return alto;
+        return recogido;
     }
 
     public void dispose() {

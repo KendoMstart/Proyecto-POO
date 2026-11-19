@@ -5,18 +5,14 @@ import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 
-public class BotasVelocidad {
-
-    private final float x, y;
-    private final float ancho = 35f;
-    private final float alto = 35f;
+public class BotasVelocidad extends Item {
 
     private Texture textura;
-    private boolean recogidas = false;
+
 
     public BotasVelocidad(float x, float y) {
-        this.x = x;
-        this.y = y;
+         super(x, y, 35f, 35f);
+
 
         // Textura amarilla temporal para representar las botas
         Pixmap pixmap = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
@@ -27,40 +23,25 @@ public class BotasVelocidad {
         pixmap.dispose();
     }
 
-    // Dibujar las botas mientras no hayan sido recogidas
+    // Dibujar las botas si no han sido recogidas
     public void render(SpriteBatch batch) {
-        if (!recogidas) {
+        if (!recogido) {
             batch.setColor(Color.WHITE);
             batch.draw(textura, x, y, ancho, alto);
         }
     }
 
-    // Activar el potenciador al recoger las botas
+    // Activar las botas al recogerlas
+    @Override
     public void recoger(Personaje jugador) {
-        if (!recogidas) {
+        if (!recogido) {
             jugador.activarBotasVelocidad();
-            recogidas = true;
+            recogido = true;
         }
     }
 
     public boolean estanRecogidas() {
-        return recogidas;
-    }
-
-    public float getX() {
-        return x;
-    }
-
-    public float getY() {
-        return y;
-    }
-
-    public float getAncho() {
-        return ancho;
-    }
-
-    public float getAlto() {
-        return alto;
+        return recogido;
     }
 
     public void dispose() {
