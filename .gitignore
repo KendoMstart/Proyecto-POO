@@ -3,3 +3,10 @@
 
 # Ignore Gradle build output directory
 build
+
+# Archivos locales de VS Code y Scala
+.vscode/
+.metals/
+
+# Archivos compilados
+app/bin/

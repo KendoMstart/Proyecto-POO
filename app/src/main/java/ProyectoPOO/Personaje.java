@@ -29,6 +29,11 @@ public class Personaje {
     // Velocidad al correr
     private final float VELOCIDAD_CORRER = 550f;
 
+    // Potenciador: botas de velocidad
+    private final float VELOCIDAD_BOTAS = 750f;
+    private final float DURACION_BOTAS = 5f;
+    private float tiempoBotasRestante = 0f;
+
 
     public Personaje(float x, float y, float ancho, float alto, String nombreArchivo) {
         this.x = x;
@@ -52,7 +57,17 @@ public class Personaje {
     }
 
     public void actualizar(float delta, float alturaPiso) {
-        // 1. Control de movimiento horizontal con A y D
+
+        // Descontar el tiempo restante de las botas
+        if (tiempoBotasRestante > 0) {
+            tiempoBotasRestante -= delta;
+
+            if (tiempoBotasRestante < 0) {
+                tiempoBotasRestante = 0;
+            }
+        }
+
+        // Control de movimiento horizontal con A y D
         velocidadX = 0;
 
         if (Gdx.input.isKeyPressed(Input.Keys.A) ||
@@ -73,8 +88,13 @@ public class Personaje {
                 Gdx.input.isKeyPressed(Input.Keys.SHIFT_RIGHT);
 
         if (shiftPresionado && moviendose && stamina > 0) {
-            // Correr más rápido en ambas direcciones
-            velocidadX = Math.signum(velocidadX) * VELOCIDAD_CORRER;
+    
+            // Si las botas están activas, correr más rápido
+            if (tiempoBotasRestante > 0) {
+                velocidadX = Math.signum(velocidadX) * VELOCIDAD_BOTAS;
+            } else {
+                velocidadX = Math.signum(velocidadX) * VELOCIDAD_CORRER;
+            }
 
             // Consumir stamina
             stamina -= CONSUMO_STAMINA * delta;
@@ -157,6 +177,21 @@ public class Personaje {
 
     public float getAlto() {
         return alto;
+    }
+
+    // Activa las botas de velocidad durante 5 segundos
+    public void activarBotasVelocidad() {
+        tiempoBotasRestante = DURACION_BOTAS;
+    }
+
+    // Indica si el potenciador sigue activo
+    public boolean tieneBotasActivas() {
+        return tiempoBotasRestante > 0;
+    }
+
+    // Devuelve los segundos restantes del efecto
+    public float getTiempoBotasRestante() {
+        return tiempoBotasRestante;
     }
 
 }
