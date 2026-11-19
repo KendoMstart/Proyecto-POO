@@ -38,6 +38,8 @@ public class Personaje {
     private final float DURACION_DOBLE_SALTO = 10f;
     private float tiempoDobleSaltoRestante = 0f;
     private boolean segundoSaltoDisponible = false;
+    private boolean escudoActivo = false;
+
 
     public Personaje(float x, float y, float ancho, float alto, String nombreArchivo) {
         this.x = x;
@@ -242,6 +244,26 @@ public class Personaje {
     // Consultar el tiempo restante del poder
     public float getTiempoDobleSaltoRestante() {
         return tiempoDobleSaltoRestante;
+    }
+
+    // Activar el escudo protector
+    public void activarEscudo() {
+        escudoActivo = true;
+    }
+
+    // Consultar si el personaje tiene escudo
+    public boolean tieneEscudoActivo() {
+        return escudoActivo;
+    }
+
+    // Utilizar el escudo para bloquear un golpe
+    public boolean bloquearGolpe() {
+        if (escudoActivo) {
+            escudoActivo = false;
+            return true;
+        }
+
+        return false;
     }
 
 }
