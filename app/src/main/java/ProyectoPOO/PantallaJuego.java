@@ -32,6 +32,7 @@ public class PantallaJuego implements Screen {
     private Personaje jugador;
     private PocionStamina pocion;
     private BotasVelocidad botas;
+    private PlumaDobleSalto pluma;
 
     // Escenarios disponibles
     private final Escenario[] escenarios = {
@@ -82,6 +83,10 @@ public class PantallaJuego implements Screen {
             700,
             escenario.getAlturaPiso()
         );
+        // Crear la pluma de doble salto
+        pluma = new PlumaDobleSalto(
+            900, 
+            escenario.getAlturaPiso());
 
         // Interfaz de texto
         Table table = new Table();
@@ -180,6 +185,22 @@ public class PantallaJuego implements Screen {
             }
         }
 
+        // Detectar colisión con la pluma de doble salto
+        if (!pluma.estaRecogida()) {
+
+            boolean colisionPluma =
+                jugador.getX() < pluma.getX() + pluma.getAncho() &&
+                jugador.getX() + jugador.getAncho() > pluma.getX() &&
+                jugador.getY() < pluma.getY() + pluma.getAlto() &&
+                jugador.getY() + jugador.getAlto() > pluma.getY();
+
+            if (colisionPluma) {
+                pluma.recoger(jugador);
+                System.out.println(
+                    "¡Pluma recogida! Doble salto durante 10 segundos"
+                );
+            }
+        }
 
         // Color del cielo según el escenario
         Color cielo = escenario.getColorCielo();
@@ -213,6 +234,7 @@ public class PantallaJuego implements Screen {
         jugador.render(batch);
         pocion.render(batch);
         botas.render(batch);
+        pluma.render(batch);
 
         // Calcular porcentaje de stamina
         float porcentajeStamina =
@@ -284,6 +306,40 @@ public class PantallaJuego implements Screen {
                 botasBarraY,
                 botasBarraAncho * porcentajeBotas,
                 botasBarraAlto
+            );
+
+            batch.setColor(Color.WHITE);
+        }
+
+        // Barra de duración de la pluma de doble salto
+        if (jugador.tieneDobleSaltoActivo()) {
+
+            float porcentajePluma =
+                jugador.getTiempoDobleSaltoRestante() / 10f;
+
+            float plumaBarraX = 20f;
+            float plumaBarraY = Gdx.graphics.getHeight() - 115f;
+            float plumaBarraAncho = 200f;
+            float plumaBarraAlto = 12f;
+
+            // Fondo oscuro
+            batch.setColor(Color.DARK_GRAY);
+            batch.draw(
+                barraTexture,
+                plumaBarraX,
+                plumaBarraY,
+                plumaBarraAncho,
+                plumaBarraAlto
+            );
+
+            // Tiempo restante en morado
+            batch.setColor(Color.MAGENTA);
+            batch.draw(
+                barraTexture,
+                plumaBarraX,
+                plumaBarraY,
+                plumaBarraAncho * porcentajePluma,
+                plumaBarraAlto
             );
 
             batch.setColor(Color.WHITE);
