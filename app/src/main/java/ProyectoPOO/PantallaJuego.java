@@ -33,6 +33,7 @@ public class PantallaJuego implements Screen {
     private PocionStamina pocion;
     private BotasVelocidad botas;
     private PlumaDobleSalto pluma;
+    private EscudoProtector escudo;
 
     // Escenarios disponibles
     private final Escenario[] escenarios = {
@@ -83,10 +84,17 @@ public class PantallaJuego implements Screen {
             700,
             escenario.getAlturaPiso()
         );
+
         // Crear la pluma de doble salto
         pluma = new PlumaDobleSalto(
             900, 
             escenario.getAlturaPiso());
+
+         // Crear escudo protector sobre el suelo
+        escudo = new EscudoProtector(
+            1100,
+            escenario.getAlturaPiso()
+        );
 
         // Interfaz de texto
         Table table = new Table();
@@ -127,6 +135,15 @@ public class PantallaJuego implements Screen {
 
     @Override
     public void render(float delta) {
+
+        // PRUEBA TEMPORAL: simular un golpe con H
+        if (Gdx.input.isKeyJustPressed(Input.Keys.H)) {
+            if (jugador.bloquearGolpe()) {
+                System.out.println("¡El escudo bloqueo el golpe!");
+            } else {
+                System.out.println("Sin escudo: golpe recibido");
+            }
+        }
 
         // Cambiar escenarios con 1, 2 y 3
         if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_1)) {
@@ -201,6 +218,24 @@ public class PantallaJuego implements Screen {
                 );
             }
         }
+        
+        // Detectar colisión con el escudo protector
+        if (!escudo.estaRecogido()) {
+
+            boolean colisionEscudo =
+                jugador.getX() < escudo.getX() + escudo.getAncho() &&
+                jugador.getX() + jugador.getAncho() > escudo.getX() &&
+                jugador.getY() < escudo.getY() + escudo.getAlto() &&
+                jugador.getY() + jugador.getAlto() > escudo.getY();
+
+            if (colisionEscudo) {
+                escudo.recoger(jugador);
+                System.out.println(
+                    "¡Escudo recogido! Protección activada"
+                );
+            }
+        }
+
 
         // Color del cielo según el escenario
         Color cielo = escenario.getColorCielo();
@@ -235,6 +270,7 @@ public class PantallaJuego implements Screen {
         pocion.render(batch);
         botas.render(batch);
         pluma.render(batch);
+        escudo.render(batch);
 
         // Calcular porcentaje de stamina
         float porcentajeStamina =
@@ -318,7 +354,9 @@ public class PantallaJuego implements Screen {
                 jugador.getTiempoDobleSaltoRestante() / 10f;
 
             float plumaBarraX = 20f;
-            float plumaBarraY = Gdx.graphics.getHeight() - 115f;
+            float plumaBarraY = Gdx.graphics.getHeight()
+            - (jugador.tieneBotasActivas() ? 115f : 95f);
+
             float plumaBarraAncho = 200f;
             float plumaBarraAlto = 12f;
 
@@ -340,6 +378,34 @@ public class PantallaJuego implements Screen {
                 plumaBarraY,
                 plumaBarraAncho * porcentajePluma,
                 plumaBarraAlto
+            );
+
+            batch.setColor(Color.WHITE);
+        }
+
+        // Indicador visual del escudo protector
+        if (jugador.tieneEscudoActivo()) {
+
+            float escudoBarraX = 20f;
+            float escudoBarraY = Gdx.graphics.getHeight() - 95f;
+
+            if (jugador.tieneBotasActivas()) {
+                escudoBarraY -= 20f;
+            }
+
+            if (jugador.tieneDobleSaltoActivo()) {
+                escudoBarraY -= 20f;
+            }
+
+
+            batch.setColor(Color.BLUE);
+
+            batch.draw(
+                barraTexture,
+                escudoBarraX,
+                escudoBarraY,
+                200f,
+                12f
             );
 
             batch.setColor(Color.WHITE);
@@ -400,6 +466,9 @@ public class PantallaJuego implements Screen {
 
         if (barraTexture != null) {
             barraTexture.dispose();
+        }
+        if (escudo != null) {
+        escudo.dispose();
         }
     }
 }
