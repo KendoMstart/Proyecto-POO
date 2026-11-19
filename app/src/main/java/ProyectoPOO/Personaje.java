@@ -34,6 +34,10 @@ public class Personaje {
     private final float DURACION_BOTAS = 5f;
     private float tiempoBotasRestante = 0f;
 
+    // Potenciador: pluma de doble salto
+    private final float DURACION_DOBLE_SALTO = 10f;
+    private float tiempoDobleSaltoRestante = 0f;
+    private boolean segundoSaltoDisponible = false;
 
     public Personaje(float x, float y, float ancho, float alto, String nombreArchivo) {
         this.x = x;
@@ -57,13 +61,24 @@ public class Personaje {
     }
 
     public void actualizar(float delta, float alturaPiso) {
-
+        
         // Descontar el tiempo restante de las botas
         if (tiempoBotasRestante > 0) {
             tiempoBotasRestante -= delta;
 
             if (tiempoBotasRestante < 0) {
                 tiempoBotasRestante = 0;
+            }
+        }
+
+        // Descontar el tiempo restante del doble salto
+        if (tiempoDobleSaltoRestante > 0) {
+            tiempoDobleSaltoRestante -= delta;
+
+            // Desactivar el poder cuando termine
+            if (tiempoDobleSaltoRestante <= 0) {
+                tiempoDobleSaltoRestante = 0;
+                segundoSaltoDisponible = false;
             }
         }
 
@@ -106,10 +121,29 @@ public class Personaje {
         // Mantener stamina entre 0 y 100
         stamina = Math.max(0, Math.min(stamina, STAMINA_MAXIMA));
 
-        // 2. Control de salto con W o FLECHA ARRIBA
-        if ((Gdx.input.isKeyJustPressed(Input.Keys.W) || Gdx.input.isKeyJustPressed(Input.Keys.UP)) && enSuelo) {
-            velocidadY = FUERZA_SALTO;
-            enSuelo = false;
+        // 2. Control del salto y doble salto
+        boolean presionoSalto =
+                Gdx.input.isKeyJustPressed(Input.Keys.W) ||
+                Gdx.input.isKeyJustPressed(Input.Keys.UP);
+
+        if (presionoSalto) {
+
+            if (enSuelo) {
+                // Primer salto normal
+                velocidadY = FUERZA_SALTO;
+                enSuelo = false;
+
+                // Preparar el segundo salto si la pluma está activa
+                segundoSaltoDisponible =
+                        tiempoDobleSaltoRestante > 0;
+
+            } else if (tiempoDobleSaltoRestante > 0 &&
+                       segundoSaltoDisponible) {
+
+                // Segundo salto mientras está en el aire
+                velocidadY = FUERZA_SALTO;
+                segundoSaltoDisponible = false;
+            }
         }
 
         // 3. Aplicar gravedad si no está en el suelo
@@ -192,6 +226,22 @@ public class Personaje {
     // Devuelve los segundos restantes del efecto
     public float getTiempoBotasRestante() {
         return tiempoBotasRestante;
+    }
+
+    // Activar el poder de doble salto durante 10 segundos
+    public void activarDobleSalto() {
+        tiempoDobleSaltoRestante = DURACION_DOBLE_SALTO;
+        segundoSaltoDisponible = false;
+    }
+
+    // Consultar si el poder sigue activo
+    public boolean tieneDobleSaltoActivo() {
+        return tiempoDobleSaltoRestante > 0;
+    }
+
+    // Consultar el tiempo restante del poder
+    public float getTiempoDobleSaltoRestante() {
+        return tiempoDobleSaltoRestante;
     }
 
 }
