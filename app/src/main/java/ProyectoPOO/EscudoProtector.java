@@ -5,18 +5,12 @@ import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 
-public class EscudoProtector {
-
-    private final float x, y;
-    private final float ancho = 35f;
-    private final float alto = 40f;
+public class EscudoProtector extends Item {
 
     private Texture textura;
-    private boolean recogido = false;
 
     public EscudoProtector(float x, float y) {
-        this.x = x;
-        this.y = y;
+        super(x, y, 35f, 40f);
 
         // Textura azul temporal para representar el escudo
         Pixmap pixmap = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
@@ -36,6 +30,7 @@ public class EscudoProtector {
     }
 
     // Activar la protección al recoger el escudo
+    @Override
     public void recoger(Personaje jugador) {
         if (!recogido) {
             jugador.activarEscudo();
@@ -46,23 +41,7 @@ public class EscudoProtector {
     public boolean estaRecogido() {
         return recogido;
     }
-
-    public float getX() {
-        return x;
-    }
-
-    public float getY() {
-        return y;
-    }
-
-    public float getAncho() {
-        return ancho;
-    }
-
-    public float getAlto() {
-        return alto;
-    }
-
+    
     public void dispose() {
         if (textura != null) {
             textura.dispose();
