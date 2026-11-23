@@ -8,197 +8,296 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 
 public class Personaje {
-    private Texture textura;
-    private float x, y;
-    private float ancho, alto;
-    
+
+    protected Texture texturaSelector;
+    protected Texture texturaDerecha;
+    protected Texture texturaIzquierda;
+
+    protected float x, y;
+    protected float ancho, alto;
+    protected Color colorTint = Color.WHITE;
+    protected boolean mirandoDerecha = true;
+
     // Variables de física y movimiento
-    private float velocidadX = 0;
-    private float velocidadY = 0;
-    private final float VELOCIDAD_CAMINAR = 350f; // Velocidad horizontal
-    private final float FUERZA_SALTO = 550f;      // Impulso hacia arriba al saltar
-    private final float GRAVEDAD = -1200f;        // Fuerza de atracción hacia abajo
-    private boolean enSuelo = false;
+    protected float velocidadX = 0;
+    protected float velocidadY = 0;
+    protected float velocidadCaminar = 350f;
+    protected float fuerzaSalto = 550f;
+    protected float gravedad = -1200f;
+    protected boolean enSuelo = false;
 
     // Sistema de stamina
-    private float stamina = 100f;
-    private final float STAMINA_MAXIMA = 100f;
-    private final float CONSUMO_STAMINA = 25f;
-    private final float RECUPERACION_STAMINA = 15f;
+    protected float stamina = 100f;
+    protected float staminaMaxima = 100f;
+    protected float consumoStamina = 25f;
+    protected float recuperacionStamina = 15f;
 
     // Velocidad al correr
-    private final float VELOCIDAD_CORRER = 550f;
+    protected float velocidadCorrer = 550f;
 
     // Potenciador: botas de velocidad
-    private final float VELOCIDAD_BOTAS = 750f;
-    private final float DURACION_BOTAS = 5f;
-    private float tiempoBotasRestante = 0f;
+    protected float velocidadBotas = 750f;
+    protected float duracionBotas = 5f;
+    protected float tiempoBotasRestante = 0f;
 
     // Potenciador: pluma de doble salto
-    private final float DURACION_DOBLE_SALTO = 10f;
-    private float tiempoDobleSaltoRestante = 0f;
-    private boolean segundoSaltoDisponible = false;
-    private boolean escudoActivo = false;
+    protected float duracionDobleSalto = 10f;
+    protected float tiempoDobleSaltoRestante = 0f;
+    protected boolean segundoSaltoDisponible = false;
 
+    // Escudo protector
+    protected boolean escudoActivo = false;
 
-    public Personaje(float x, float y, float ancho, float alto, String nombreArchivo) {
+    // Sistema de vida (3 vidas)
+    protected int vidas = 3;
+    protected int vidasMaximas = 3;
+    protected float tiempoInvulnerable = 0f;
+    protected float duracionInvulnerabilidad = 1.0f;
+
+    public Personaje(
+        float x,
+        float y,
+        float ancho,
+        float alto,
+        String archivoSelector,
+        String archivoDerecha,
+        String archivoIzquierda
+    ) {
+        this(x, y, ancho, alto, archivoSelector, archivoDerecha, archivoIzquierda, Color.WHITE);
+    }
+
+    public Personaje(
+        float x,
+        float y,
+        float ancho,
+        float alto,
+        String archivoSelector,
+        String archivoDerecha,
+        String archivoIzquierda,
+        Color colorTint
+    ) {
         this.x = x;
         this.y = y;
         this.ancho = ancho;
         this.alto = alto;
-
-        try {
-            if (Gdx.files.internal(nombreArchivo).exists()) {
-                textura = new Texture(Gdx.files.internal(nombreArchivo));
-            } else {
-                Pixmap pixmap = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
-                pixmap.setColor(Color.valueOf("e74c3c"));
-                pixmap.fill();
-                textura = new Texture(pixmap);
-                pixmap.dispose();
-            }
-        } catch (Exception e) {
-            System.out.println("Error al cargar la textura del personaje: " + e.getMessage());
+        if (colorTint != null) {
+            this.colorTint = colorTint;
         }
+
+        this.texturaSelector = cargarTexturaSegura(archivoSelector, this.colorTint);
+        this.texturaDerecha = cargarTexturaSegura(archivoDerecha, this.colorTint);
+        this.texturaIzquierda = cargarTexturaSegura(archivoIzquierda, this.colorTint);
+    }
+
+    public static Texture cargarTexturaSegura(String nombreArchivo, Color colorRespaldo) {
+        try {
+            if (nombreArchivo != null && Gdx.files.internal(nombreArchivo).exists()) {
+                return new Texture(Gdx.files.internal(nombreArchivo));
+            }
+            if (Gdx.files.internal("personaje.png").exists()) {
+                return new Texture(Gdx.files.internal("personaje.png"));
+            }
+        } catch (Exception ignored) {
+        }
+
+        Pixmap pm = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
+        pm.setColor(colorRespaldo != null ? colorRespaldo : Color.WHITE);
+        pm.fill();
+        Texture tex = new Texture(pm);
+        pm.dispose();
+        return tex;
     }
 
     public void actualizar(float delta, float alturaPiso) {
-        
-        // Descontar el tiempo restante de las botas
+        // Actualizar temporizadores de potenciadores e invulnerabilidad
         if (tiempoBotasRestante > 0) {
             tiempoBotasRestante -= delta;
-
             if (tiempoBotasRestante < 0) {
                 tiempoBotasRestante = 0;
             }
         }
 
-        // Descontar el tiempo restante del doble salto
         if (tiempoDobleSaltoRestante > 0) {
             tiempoDobleSaltoRestante -= delta;
-
-            // Desactivar el poder cuando termine
             if (tiempoDobleSaltoRestante <= 0) {
                 tiempoDobleSaltoRestante = 0;
                 segundoSaltoDisponible = false;
             }
         }
 
-        // Control de movimiento horizontal con A y D
-        velocidadX = 0;
-
-        if (Gdx.input.isKeyPressed(Input.Keys.A) ||
-            Gdx.input.isKeyPressed(Input.Keys.LEFT)) {
-            velocidadX = -VELOCIDAD_CAMINAR;
-        }
-
-        if (Gdx.input.isKeyPressed(Input.Keys.D) ||
-            Gdx.input.isKeyPressed(Input.Keys.RIGHT)) {
-            velocidadX = VELOCIDAD_CAMINAR;
-        }
-
-        // Sistema de stamina para correr con Shift
-        boolean moviendose = velocidadX != 0;
-
-        boolean shiftPresionado =
-                Gdx.input.isKeyPressed(Input.Keys.SHIFT_LEFT) ||
-                Gdx.input.isKeyPressed(Input.Keys.SHIFT_RIGHT);
-
-        if (shiftPresionado && moviendose && stamina > 0) {
-    
-            // Si las botas están activas, correr más rápido
-            if (tiempoBotasRestante > 0) {
-                velocidadX = Math.signum(velocidadX) * VELOCIDAD_BOTAS;
-            } else {
-                velocidadX = Math.signum(velocidadX) * VELOCIDAD_CORRER;
+        if (tiempoInvulnerable > 0) {
+            tiempoInvulnerable -= delta;
+            if (tiempoInvulnerable < 0) {
+                tiempoInvulnerable = 0;
             }
-
-            // Consumir stamina
-            stamina -= CONSUMO_STAMINA * delta;
-        } else {
-            // Recuperar stamina
-            stamina += RECUPERACION_STAMINA * delta;
         }
 
-        // Mantener stamina entre 0 y 100
-        stamina = Math.max(0, Math.min(stamina, STAMINA_MAXIMA));
+        // Movimiento horizontal (A / D)
+        boolean moverIzquierda = Gdx.input.isKeyPressed(Input.Keys.A);
+        boolean moverDerecha = Gdx.input.isKeyPressed(Input.Keys.D);
+        boolean intentandoCorrer = (Gdx.input.isKeyPressed(Input.Keys.SHIFT_LEFT)
+                || Gdx.input.isKeyPressed(Input.Keys.SHIFT_RIGHT))
+                && (moverIzquierda || moverDerecha);
 
-        // 2. Control del salto y doble salto
-        boolean presionoSalto =
-                Gdx.input.isKeyJustPressed(Input.Keys.W) ||
-                Gdx.input.isKeyJustPressed(Input.Keys.UP);
+        float velocidadActual;
+        if (tiempoBotasRestante > 0) {
+            velocidadActual = velocidadBotas;
+        } else if (intentandoCorrer && stamina > 0) {
+            velocidadActual = velocidadCorrer;
+            stamina -= consumoStamina * delta;
+            if (stamina < 0) {
+                stamina = 0;
+            }
+        } else {
+            velocidadActual = velocidadCaminar;
+            if (stamina < staminaMaxima) {
+                stamina += recuperacionStamina * delta;
+                if (stamina > staminaMaxima) {
+                    stamina = staminaMaxima;
+                }
+            }
+        }
 
-        if (presionoSalto) {
+        velocidadX = 0;
+        if (moverIzquierda && !moverDerecha) {
+            velocidadX = -velocidadActual;
+            mirandoDerecha = false;
+        } else if (moverDerecha && !moverIzquierda) {
+            velocidadX = velocidadActual;
+            mirandoDerecha = true;
+        } else if (moverIzquierda) {
+            velocidadX = -velocidadActual;
+            mirandoDerecha = false;
+        } else if (moverDerecha) {
+            velocidadX = velocidadActual;
+            mirandoDerecha = true;
+        }
 
+        // Salto y doble salto (W)
+        if (Gdx.input.isKeyJustPressed(Input.Keys.W)) {
             if (enSuelo) {
-                // Primer salto normal
-                velocidadY = FUERZA_SALTO;
+                velocidadY = fuerzaSalto;
                 enSuelo = false;
-
-                // Preparar el segundo salto si la pluma está activa
-                segundoSaltoDisponible =
-                        tiempoDobleSaltoRestante > 0;
-
-            } else if (tiempoDobleSaltoRestante > 0 &&
-                       segundoSaltoDisponible) {
-
-                // Segundo salto mientras está en el aire
-                velocidadY = FUERZA_SALTO;
+                if (tiempoDobleSaltoRestante > 0) {
+                    segundoSaltoDisponible = true;
+                }
+            } else if (tiempoDobleSaltoRestante > 0 && segundoSaltoDisponible) {
+                velocidadY = fuerzaSalto;
                 segundoSaltoDisponible = false;
             }
         }
 
-        // 3. Aplicar gravedad si no está en el suelo
-        if (!enSuelo) {
-            velocidadY += GRAVEDAD * delta;
-        }
-
-        // 4. Actualizar posiciones
+        // Aplicar gravedad y posición
+        velocidadY += gravedad * delta;
         x += velocidadX * delta;
         y += velocidadY * delta;
 
-        // 5. Colisión con el piso (la altura del piso verde es de 100 píxeles)
+        // Limitar bordes horizontales de pantalla
+        float anchoPantalla = Gdx.graphics.getWidth();
+        if (x < 0) {
+            x = 0;
+        } else if (x + ancho > anchoPantalla) {
+            x = anchoPantalla - ancho;
+        }
+
+        // Colisión con el piso
         if (y <= alturaPiso) {
             y = alturaPiso;
             velocidadY = 0;
             enSuelo = true;
-        }
-
-        // 6. Evitar que salga de los límites laterales de la ventana
-        if (x < 0) x = 0;
-        if (x > Gdx.graphics.getWidth() - ancho) {
-            x = Gdx.graphics.getWidth() - ancho;
+            if (tiempoDobleSaltoRestante > 0) {
+                segundoSaltoDisponible = true;
+            }
+        } else {
+            enSuelo = false;
         }
     }
 
     public void render(SpriteBatch batch) {
-        batch.draw(textura, x, y, ancho, alto);
+        Texture spriteActual = mirandoDerecha ? texturaDerecha : texturaIzquierda;
+        float alpha = (tiempoInvulnerable > 0) ? 0.45f : 1f;
+        batch.setColor(colorTint.r, colorTint.g, colorTint.b, alpha);
+        batch.draw(spriteActual, x, y, ancho, alto);
+        batch.setColor(Color.WHITE);
     }
 
-    public void dispose() {
-        if (textura != null) {
-            textura.dispose();
+    public Texture getTexturaSelector() {
+        return texturaSelector;
+    }
+
+    // Daño y escudo
+    public void recibirDanio() {
+        if (tiempoInvulnerable > 0) {
+            return;
+        }
+        if (bloquearGolpe()) {
+            tiempoInvulnerable = duracionInvulnerabilidad;
+            return;
+        }
+        if (vidas > 0) {
+            vidas--;
+            tiempoInvulnerable = duracionInvulnerabilidad;
         }
     }
 
-    // Devuelve la stamina actual del personaje
-    public float getStamina() {
-        return stamina;
+    public boolean bloquearGolpe() {
+        if (escudoActivo) {
+            escudoActivo = false;
+            return true;
+        }
+        return false;
     }
 
-    // Devuelve la cantidad máxima de stamina
-    public float getStaminaMaxima() {
-        return STAMINA_MAXIMA;
+    public boolean estaVivo() {
+        return vidas > 0;
     }
 
-    // Recupera energía al recoger x poción
-    public void recuperarStamina(float cantidad) {
-        if (cantidad > 0) {
-            stamina = Math.min(stamina + cantidad, STAMINA_MAXIMA);
+    // Potenciadores
+    public void agregarStamina(float cantidad) {
+        stamina += cantidad;
+        if (stamina > staminaMaxima) {
+            stamina = staminaMaxima;
         }
     }
 
-    // Obtener posición y tamaño del personaje
+    public void recuperarStamina(float energiaRecuperada) {
+        agregarStamina(energiaRecuperada);
+    }
+
+    public void activarBotasVelocidad() {
+        tiempoBotasRestante = duracionBotas;
+    }
+
+    public void activarDobleSalto() {
+        tiempoDobleSaltoRestante = duracionDobleSalto;
+        segundoSaltoDisponible = true;
+    }
+
+    public void activarEscudo() {
+        escudoActivo = true;
+    }
+
+    public boolean tieneBotasActivas() {
+        return tiempoBotasRestante > 0;
+    }
+
+    public float getTiempoBotasRestante() {
+        return tiempoBotasRestante;
+    }
+
+    public boolean tieneDobleSaltoActivo() {
+        return tiempoDobleSaltoRestante > 0;
+    }
+
+    public float getTiempoDobleSaltoRestante() {
+        return tiempoDobleSaltoRestante;
+    }
+
+    public boolean tieneEscudoActivo() {
+        return escudoActivo;
+    }
+
+    // Getters básicos
     public float getX() {
         return x;
     }
@@ -215,55 +314,35 @@ public class Personaje {
         return alto;
     }
 
-    // Activa las botas de velocidad durante 5 segundos
-    public void activarBotasVelocidad() {
-        tiempoBotasRestante = DURACION_BOTAS;
+    public float getStamina() {
+        return stamina;
     }
 
-    // Indica si el potenciador sigue activo
-    public boolean tieneBotasActivas() {
-        return tiempoBotasRestante > 0;
+    public float getStaminaMaxima() {
+        return staminaMaxima;
     }
 
-    // Devuelve los segundos restantes del efecto
-    public float getTiempoBotasRestante() {
-        return tiempoBotasRestante;
+    public int getVidas() {
+        return vidas;
     }
 
-    // Activar el poder de doble salto durante 10 segundos
-    public void activarDobleSalto() {
-        tiempoDobleSaltoRestante = DURACION_DOBLE_SALTO;
-        segundoSaltoDisponible = false;
+    public int getVidasMaximas() {
+        return vidasMaximas;
     }
 
-    // Consultar si el poder sigue activo
-    public boolean tieneDobleSaltoActivo() {
-        return tiempoDobleSaltoRestante > 0;
+    public Color getColorTint() {
+        return colorTint;
     }
 
-    // Consultar el tiempo restante del poder
-    public float getTiempoDobleSaltoRestante() {
-        return tiempoDobleSaltoRestante;
-    }
-
-    // Activar el escudo protector
-    public void activarEscudo() {
-        escudoActivo = true;
-    }
-
-    // Consultar si el personaje tiene escudo
-    public boolean tieneEscudoActivo() {
-        return escudoActivo;
-    }
-
-    // Utilizar el escudo para bloquear un golpe
-    public boolean bloquearGolpe() {
-        if (escudoActivo) {
-            escudoActivo = false;
-            return true;
+    public void dispose() {
+        if (texturaSelector != null) {
+            texturaSelector.dispose();
         }
-
-        return false;
+        if (texturaDerecha != null && texturaDerecha != texturaSelector) {
+            texturaDerecha.dispose();
+        }
+        if (texturaIzquierda != null && texturaIzquierda != texturaSelector && texturaIzquierda != texturaDerecha) {
+            texturaIzquierda.dispose();
+        }
     }
-
 }

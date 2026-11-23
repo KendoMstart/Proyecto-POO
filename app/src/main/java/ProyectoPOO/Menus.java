@@ -75,8 +75,9 @@ public class Menus implements Screen {
         btnPlay.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                System.out.println("Iniciando partida...");
-                game.setScreen(new PantallaJuego(game));
+                System.out.println("Abriendo selector de personajes...");
+                game.setScreen(new SelectorPersonaje(game));
+                dispose();
             }
         });
 
@@ -95,7 +96,7 @@ public class Menus implements Screen {
         });
     }
 
-private void createBasicSkin() {
+    private void createBasicSkin() {
         skin = new Skin();
         skin.add("default", new BitmapFont());
 
@@ -175,5 +176,4 @@ private void createBasicSkin() {
             fallbackTexture.dispose();
         }
     }
-    
 }

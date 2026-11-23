@@ -5,16 +5,19 @@ import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 
-public class PocionStamina extends Item {
+public class PocionStamina {
 
-    
+    private float x, y;
+    private final float ancho = 30f;
+    private final float alto = 40f;
     private final float energiaRecuperada = 50f;
+
     private Texture textura;
-    
+    private boolean recogida = false;
 
     public PocionStamina(float x, float y) {
-        super(x, y, 30f, 40f);
-
+        this.x = x;
+        this.y = y;
 
         // Textura azul temporal para representar la poción
         Pixmap pixmap = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
@@ -25,32 +28,44 @@ public class PocionStamina extends Item {
         pixmap.dispose();
     }
 
-    // Dibujar la poción mientras no haya sido recogida
+    // Dibuja la poción mientras no haya sido recogida
     public void render(SpriteBatch batch) {
-        if (!recogido) {
+        if (!recogida) {
             batch.draw(textura, x, y, ancho, alto);
         }
     }
 
-    // Recuperar stamina al recoger la poción
-    @Override
+    // Recupera energía y marca la poción como recogida
     public void recoger(Personaje jugador) {
-        if (!recogido) {
+        if (!recogida) {
             jugador.recuperarStamina(energiaRecuperada);
-            recogido = true;
+            recogida = true;
         }
     }
 
-    // Mantener este método para PantallaJuego.java
     public boolean estaRecogida() {
-        return recogido;
+        return recogida;
     }
 
-    // Liberar la textura al cerrar el juego
+    public float getX() {
+        return x;
+    }
+
+    public float getY() {
+        return y;
+    }
+
+    public float getAncho() {
+        return ancho;
+    }
+
+    public float getAlto() {
+        return alto;
+    }
+
     public void dispose() {
         if (textura != null) {
             textura.dispose();
         }
     }
-
 }
