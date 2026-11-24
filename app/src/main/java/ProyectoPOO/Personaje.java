@@ -139,23 +139,28 @@ public class Personaje {
                 || Gdx.input.isKeyPressed(Input.Keys.SHIFT_RIGHT))
                 && (moverIzquierda || moverDerecha);
 
-        float velocidadActual;
-        if (tiempoBotasRestante > 0) {
-            velocidadActual = velocidadBotas;
-        } else if (intentandoCorrer && stamina > 0) {
-            velocidadActual = velocidadCorrer;
+        // Determinar si el personaje puede correr
+        boolean corriendo = intentandoCorrer && stamina > 0;
+
+        // Administrar la stamina independientemente de las botas
+        if (corriendo) {
             stamina -= consumoStamina * delta;
-            if (stamina < 0) {
-                stamina = 0;
-            }
+        } else {
+            stamina += recuperacionStamina * delta;
+        }
+
+        // Mantener la stamina entre 0 y su valor máximo
+        stamina = Math.max(0, Math.min(stamina, staminaMaxima));
+
+        // Elegir la velocidad según los poderes activos
+        float velocidadActual;
+
+        if (corriendo && tiempoBotasRestante > 0) {
+            velocidadActual = velocidadBotas;
+        } else if (corriendo) {
+            velocidadActual = velocidadCorrer;
         } else {
             velocidadActual = velocidadCaminar;
-            if (stamina < staminaMaxima) {
-                stamina += recuperacionStamina * delta;
-                if (stamina > staminaMaxima) {
-                    stamina = staminaMaxima;
-                }
-            }
         }
 
         velocidadX = 0;
@@ -328,6 +333,13 @@ public class Personaje {
 
     public int getVidasMaximas() {
         return vidasMaximas;
+    }
+
+    // Recuperar una vida sin superar el máximo permitido
+    public void recuperarVida() {
+        if (vidas < vidasMaximas) {
+            vidas++;
+        }
     }
 
     public Color getColorTint() {
