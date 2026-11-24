@@ -31,9 +31,11 @@ public class PantallaJuego implements Screen {
 
     // Personaje e ítems
     private Personaje jugador;
+    private int personajeSeleccionado;
     private PocionStamina pocion;
     private BotasVelocidad botas;
     private PlumaDobleSalto pluma;
+    private CorazonVida corazonVida;
     private EscudoProtector escudo;
 
     // Escenarios disponibles
@@ -88,6 +90,15 @@ public class PantallaJuego implements Screen {
             );
         }
 
+        // Recordar el tipo de personaje seleccionado
+        if (jugador instanceof PRS2) {
+            personajeSeleccionado = 2;
+        } else if (jugador instanceof PRS3) {
+            personajeSeleccionado = 3;
+        } else {
+            personajeSeleccionado = 1;
+        }
+
         // Crear poción sobre el piso del escenario
         pocion = new PocionStamina(
             500,
@@ -109,6 +120,12 @@ public class PantallaJuego implements Screen {
         // Crear escudo protector sobre el suelo
         escudo = new EscudoProtector(
             1100,
+            escenario.getAlturaPiso()
+        );
+
+        // Crear corazón de curación sobre el suelo
+        corazonVida = new CorazonVida(
+            350f,
             escenario.getAlturaPiso()
         );
 
@@ -188,7 +205,7 @@ public class PantallaJuego implements Screen {
 
         // Comprobar si perdió las 3 vidas -> ir a Game Over
         if (!jugador.estaVivo()) {
-            game.setScreen(new PantallaGameOver(game));
+            game.setScreen(new PantallaGameOver(game, personajeSeleccionado));
             dispose();
             return;
         }
@@ -249,6 +266,19 @@ public class PantallaJuego implements Screen {
             }
         }
 
+        // Detectar colisión con el corazón de curación
+        if (!corazonVida.estaRecogido()) {
+            boolean colisionCorazon =
+                jugador.getX() < corazonVida.getX() + corazonVida.getAncho() &&
+                jugador.getX() + jugador.getAncho() > corazonVida.getX() &&
+                jugador.getY() < corazonVida.getY() + corazonVida.getAlto() &&
+                jugador.getY() + jugador.getAlto() > corazonVida.getY();
+
+            if (colisionCorazon) {
+                corazonVida.recoger(jugador);
+            }
+        }
+
         // Color del cielo según el escenario
         Color cielo = escenario.getColorCielo();
         Gdx.gl.glClearColor(cielo.r, cielo.g, cielo.b, 1f);
@@ -265,6 +295,7 @@ public class PantallaJuego implements Screen {
 
         jugador.render(batch);
         pocion.render(batch);
+        corazonVida.render(batch);
         botas.render(batch);
         pluma.render(batch);
         escudo.render(batch);
@@ -399,6 +430,9 @@ public class PantallaJuego implements Screen {
         }
         if (escudo != null) {
             escudo.dispose();
+        }
+        if (corazonVida != null) {
+            corazonVida.dispose();
         }
     }
 }

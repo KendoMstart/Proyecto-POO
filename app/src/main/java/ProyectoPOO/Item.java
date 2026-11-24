@@ -38,4 +38,9 @@ public abstract class Item {
     public boolean estaRecogido() {
         return recogido;
     }
+
+    public void reiniciar() {
+        recogido = false;
+    }
+
 }
