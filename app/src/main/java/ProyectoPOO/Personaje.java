@@ -18,6 +18,12 @@ public class Personaje {
     protected Color colorTint = Color.WHITE;
     protected boolean mirandoDerecha = true;
 
+    // Variables para el dash evasivo
+    private boolean dashActivo = false;
+    private float tiempoDash = 0f;
+    private final float duracionDash = 0.15f;
+    private float velocidadDash = 0f;
+
     // Variables de física y movimiento
     protected float velocidadX = 0;
     protected float velocidadY = 0;
@@ -197,6 +203,21 @@ public class Personaje {
         x += velocidadX * delta;
         y += velocidadY * delta;
 
+        // Aplicar movimiento fluido del dash
+        if (dashActivo) {
+
+            float tiempoMovimiento = Math.min(delta, tiempoDash);
+
+            x += velocidadDash * tiempoMovimiento;
+
+            tiempoDash -= tiempoMovimiento;
+
+            if (tiempoDash <= 0f) {
+                dashActivo = false;
+                velocidadDash = 0f;
+            }
+        }
+
         // Limitar bordes horizontales de pantalla
         float anchoPantalla = Gdx.graphics.getWidth();
         if (x < 0) {
@@ -302,9 +323,35 @@ public class Personaje {
         return escudoActivo;
     }
 
+    // Indica hacia dónde mira el personaje
+    public boolean estaMirandoDerecha() {
+        return mirandoDerecha;
+    }
+    
     // Getters básicos
     public float getX() {
         return x;
+    }
+    
+    // Desplazar al personaje sin salir de la pantalla
+    public void desplazarHorizontalmente(float destinoX) {
+        float limiteDerecho = Gdx.graphics.getWidth() - ancho;
+
+        x = Math.max(0f, Math.min(destinoX, limiteDerecho));
+    }
+
+    // Dash fluido hacia la dirección del personaje
+    public void iniciarDash() {
+        dashActivo = true;
+        tiempoDash = duracionDash;
+
+        float distancia = 120f;
+
+        if (mirandoDerecha) {
+            velocidadDash = distancia / duracionDash;
+        } else {
+            velocidadDash = -distancia / duracionDash;
+        }
     }
 
     public float getY() {
