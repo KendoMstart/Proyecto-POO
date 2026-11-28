@@ -1,5 +1,7 @@
 package ProyectoPOO;
 
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+
 public abstract class Item {
 
     // Características comunes de los objetos
@@ -17,6 +19,8 @@ public abstract class Item {
 
     // Cada objeto tendrá su propio efecto
     public abstract void recoger(Personaje jugador);
+    public abstract void render(SpriteBatch batch);
+    public abstract void dispose();
 
     // Métodos comunes
     public float getX() {

@@ -1,5 +1,6 @@
 package ProyectoPOO;
 
+import java.util.ArrayList;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.Screen;
@@ -32,6 +33,45 @@ public class PantallaJuego implements Screen {
     // Personaje e ítems
     private Personaje jugador;
     private int personajeSeleccionado;
+    private HabilidadEspecial habilidadEspecial;
+    
+    // Área del golpe especial del Guerrero
+    private boolean golpeEspecialActivo = false;
+    private float tiempoGolpeEspecial = 0f;
+
+    // Tiempo mínimo entre golpes 
+    private float cooldownGolpe = 0f;
+    private final float duracionCooldownGolpe = 0.5f;
+
+    // Cooldown independiente para habilidades especiales
+    private float cooldownAtaqueEspecial = 0f;
+    private boolean ataqueEspecialDisponible = true;
+    private final float duracionCooldownAtaqueEspecial = 2f;
+
+    private final float duracionGolpeEspecial = 0.2f;
+    private final float alcanceGolpeEspecial = 80f;
+    private final float alturaGolpeEspecial = 50f;
+   
+    // Cooldown exclusivo del escudo del Guerrero
+    private float cooldownEscudo = 0f;
+    private final float duracionCooldownEscudo = 10f;
+
+    // Efecto visual del teletransporte del Mago
+    private boolean efectoTeletransporteActivo = false;
+    private float tiempoEfectoTeletransporte = 0f;
+    private final float duracionEfectoTeletransporte = 0.25f;
+
+    private ArrayList<Item> items = new ArrayList<>();
+    private ArrayList<ProyectilMagico> proyectilesMagicos = new ArrayList<>();
+
+    // Explosión mágica especial del Mago
+    private boolean explosionMagicaActiva = false;
+    private float tiempoExplosionMagica = 0f;
+    private final float duracionExplosionMagica = 0.35f;
+    private final float radioExplosionMagica = 100f;
+
+    private ArrayList<Flecha> flechas = new ArrayList<>();
+    private ArrayList<ProyectilMagico> ondasEspada = new ArrayList<>();
     private PocionStamina pocion;
     private BotasVelocidad botas;
     private PlumaDobleSalto pluma;
@@ -90,13 +130,18 @@ public class PantallaJuego implements Screen {
             );
         }
 
-        // Recordar el tipo de personaje seleccionado
+        // Identificar al personaje y asignarle su habilidad especial
         if (jugador instanceof PRS2) {
             personajeSeleccionado = 2;
+            habilidadEspecial = new HabilidadMago();
+
         } else if (jugador instanceof PRS3) {
             personajeSeleccionado = 3;
+            habilidadEspecial = new HabilidadArquero();
+
         } else {
             personajeSeleccionado = 1;
+            habilidadEspecial = new HabilidadGuerrero();
         }
 
         // Crear poción sobre el piso del escenario
@@ -105,11 +150,15 @@ public class PantallaJuego implements Screen {
             escenario.getAlturaPiso()
         );
 
+        items.add(pocion);
+
         // Crear botas de velocidad sobre el suelo
         botas = new BotasVelocidad(
             700,
             escenario.getAlturaPiso()
         );
+
+        items.add(botas);
 
         // Crear la pluma de doble salto
         pluma = new PlumaDobleSalto(
@@ -117,17 +166,23 @@ public class PantallaJuego implements Screen {
             escenario.getAlturaPiso()
         );
 
+        items.add(pluma);
+
         // Crear escudo protector sobre el suelo
         escudo = new EscudoProtector(
             1100,
             escenario.getAlturaPiso()
         );
 
+        items.add(escudo);
+
         // Crear corazón de curación sobre el suelo
         corazonVida = new CorazonVida(
             350f,
             escenario.getAlturaPiso()
         );
+
+        items.add(corazonVida);
 
         // Interfaz de texto
         Table table = new Table();
@@ -170,8 +225,221 @@ public class PantallaJuego implements Screen {
         );
     }
 
+    private boolean hayColision(Item item) {
+        return jugador.getX() < item.getX() + item.getAncho()
+            && jugador.getX() + jugador.getAncho() > item.getX()
+            && jugador.getY() < item.getY() + item.getAlto()
+            && jugador.getY() + jugador.getAlto() > item.getY();
+    }
+
     @Override
     public void render(float delta) {
+
+        // Ataque básico del Arquero con clic izquierdo
+        if (Gdx.input.isButtonJustPressed(Input.Buttons.LEFT)
+                && personajeSeleccionado == 3) {
+
+            if (cooldownGolpe <= 0f) {
+
+                boolean derecha = jugador.estaMirandoDerecha();
+
+                float flechaX = derecha
+                        ? jugador.getX() + jugador.getAncho()
+                        : jugador.getX() - 30f;
+
+                float flechaY = jugador.getY()
+                        + jugador.getAlto() / 2f;
+
+                // Crear una sola flecha recta
+                flechas.add(new Flecha(flechaX, flechaY, derecha, 0f));
+
+                // Esperar 0.5 segundos entre ataques básicos
+                cooldownGolpe = duracionCooldownGolpe;
+
+                System.out.println("¡El Arquero dispara una flecha!");
+            }
+        }
+
+        // Disparo triple especial del Arquero con clic derecho
+        if (Gdx.input.isButtonJustPressed(Input.Buttons.RIGHT)
+                && personajeSeleccionado == 3) {
+
+            if (cooldownAtaqueEspecial <= 0f) {
+                cooldownAtaqueEspecial = duracionCooldownAtaqueEspecial;
+
+                boolean derecha = jugador.estaMirandoDerecha();
+
+                float flechaX = derecha
+                        ? jugador.getX() + jugador.getAncho()
+                        : jugador.getX() - 30f;
+
+                float flechaY = jugador.getY() + jugador.getAlto() / 2f;
+
+                // Flecha hacia arriba
+                flechas.add(new Flecha(flechaX, flechaY, derecha, 150f));
+
+                // Flecha recta
+                flechas.add(new Flecha(flechaX, flechaY, derecha, 0f));
+
+                // Flecha hacia abajo
+                flechas.add(new Flecha(flechaX, flechaY, derecha, -150f));
+
+                System.out.println("¡El Arquero realiza un disparo triple!");
+
+            } else {
+                System.out.println("¡No tienes suficiente energía!");
+            }
+        }
+
+        // Habilidad especial del Mago con clic derecho
+        if (Gdx.input.isButtonJustPressed(Input.Buttons.RIGHT)
+                && personajeSeleccionado == 2) {
+
+            if (cooldownAtaqueEspecial <= 0f) {
+
+                // Activar la explosión mágica
+                explosionMagicaActiva = true;
+                tiempoExplosionMagica = duracionExplosionMagica;
+
+                // Iniciar cooldown de 2 segundos
+                cooldownAtaqueEspecial = duracionCooldownAtaqueEspecial;
+
+                System.out.println("¡El Mago activa su explosión mágica!");
+            }
+        }
+
+       // Ataque básico del Mago con clic izquierdo
+        if (Gdx.input.isButtonJustPressed(Input.Buttons.LEFT)
+                && personajeSeleccionado == 2) {
+
+            if (cooldownGolpe <= 0f) {
+
+                boolean derecha = jugador.estaMirandoDerecha();
+
+                float proyectilX = derecha
+                        ? jugador.getX() + jugador.getAncho()
+                        : jugador.getX() - 25f;
+
+                float proyectilY = jugador.getY() + jugador.getAlto() / 2f;
+
+                proyectilesMagicos.add(
+                    new ProyectilMagico(proyectilX, proyectilY, derecha)
+                );
+
+                // Esperar 0.5 segundos entre disparos
+                cooldownGolpe = duracionCooldownGolpe;
+
+                System.out.println("¡El Mago lanza una bola mágica!");
+            }
+        }
+
+        // Prueba de controles del mouse
+        if (Gdx.input.isButtonJustPressed(Input.Buttons.LEFT)) {
+            System.out.println("Clic izquierdo: ataque básico");
+        }
+
+        if (Gdx.input.isButtonJustPressed(Input.Buttons.RIGHT)) {
+            System.out.println("Clic derecho: habilidad especial");
+        }
+        
+        // Ataque especial del Guerrero con clic derecho
+        if (Gdx.input.isButtonJustPressed(Input.Buttons.RIGHT)
+                && personajeSeleccionado == 1) {
+
+            if (cooldownAtaqueEspecial <= 0f) {
+
+                // Iniciar cooldown de 2 segundos
+                cooldownAtaqueEspecial = duracionCooldownAtaqueEspecial;
+
+                // Dirección del ataque
+                boolean derecha = jugador.estaMirandoDerecha();
+
+                float ondaX = derecha
+                        ? jugador.getX() + jugador.getAncho()
+                        : jugador.getX() - 25f;
+
+                float ondaY = jugador.getY() + jugador.getAlto() / 2f;
+
+                // Crear la onda de espada
+                ondasEspada.add(
+                    new ProyectilMagico(ondaX, ondaY, derecha)
+                );
+
+                System.out.println("¡El Guerrero lanza una onda de espada!");
+            }
+        }
+
+        // Ataque básico del Guerrero con clic izquierdo
+        if (Gdx.input.isButtonJustPressed(Input.Buttons.LEFT)
+                && personajeSeleccionado == 1) {
+
+            if (cooldownGolpe <= 0f) {
+
+                // Activar el espadazo
+                golpeEspecialActivo = true;
+                tiempoGolpeEspecial = duracionGolpeEspecial;
+
+                // Evitar golpes demasiado rápidos
+                cooldownGolpe = duracionCooldownGolpe;
+
+                System.out.println("¡El Guerrero realiza un espadazo!");
+            }
+        }
+
+        // Activar escudo del Guerrero con Q
+        if (Gdx.input.isKeyJustPressed(Input.Keys.Q)
+                && personajeSeleccionado == 1) {
+
+            if (cooldownEscudo <= 0f) {
+
+                jugador.activarEscudo();
+
+                // Iniciar espera de 10 segundos
+                cooldownEscudo = duracionCooldownEscudo;
+
+                System.out.println("¡Escudo del Guerrero activado!");
+
+            } else {
+                System.out.println(
+                    "Escudo en recarga. Faltan "
+                    + (int) Math.ceil(cooldownEscudo)
+                    + " segundos."
+                );
+            }
+        }
+        
+        // Defensa del Mago y del Arquero con Q
+        if (Gdx.input.isKeyJustPressed(Input.Keys.Q)
+                && (personajeSeleccionado == 2 || personajeSeleccionado == 3)) {
+
+            if (cooldownEscudo <= 0f) {
+
+                if (personajeSeleccionado == 2) {
+                    // Mago: teletransporte instantáneo
+                    DashEvasivo teletransporte = new DashEvasivo();
+
+                    float destinoX = teletransporte.calcularDestino(
+                        jugador.getX(),
+                        jugador.estaMirandoDerecha()
+                    );
+
+                    jugador.desplazarHorizontalmente(destinoX);
+
+                    // Activar el efecto visual del teletransporte
+                    efectoTeletransporteActivo = true;
+                    tiempoEfectoTeletransporte = duracionEfectoTeletransporte;
+
+                    System.out.println("¡Teletransporte mágico!");
+                } else {
+                    // Arquero: dash fluido
+                    jugador.iniciarDash();
+
+                    System.out.println("¡Dash evasivo!");
+                }
+
+                cooldownEscudo = duracionCooldownEscudo;
+            }
+        }
 
         // PRUEBA TEMPORAL: simular un golpe con H
         if (Gdx.input.isKeyJustPressed(Input.Keys.H)) {
@@ -196,6 +464,107 @@ public class PantallaJuego implements Screen {
         if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_3)) {
             cambiarEscenario(2);
         }
+       
+        // Actualizar el cooldown de las habilidades especiales
+        if (cooldownAtaqueEspecial > 0f) {
+            cooldownAtaqueEspecial -= delta;
+
+            if (cooldownAtaqueEspecial < 0f) {
+                cooldownAtaqueEspecial = 0f;
+            }
+            ataqueEspecialDisponible = cooldownAtaqueEspecial <= 0f;
+        }
+
+        // Actualizar el cooldown del golpe especial
+        if (cooldownGolpe > 0f) {
+            cooldownGolpe -= delta;
+
+            if (cooldownGolpe < 0f) {
+                cooldownGolpe = 0f;
+            }
+        }
+
+        // Actualizar la duración de la explosión mágica
+        if (explosionMagicaActiva) {
+            tiempoExplosionMagica -= delta;
+
+            if (tiempoExplosionMagica <= 0f) {
+                tiempoExplosionMagica = 0f;
+                explosionMagicaActiva = false;
+            }
+        }
+
+        // Actualizar la duración del golpe especial
+        if (golpeEspecialActivo) {
+            tiempoGolpeEspecial -= delta;
+
+            if (tiempoGolpeEspecial <= 0f) {
+                tiempoGolpeEspecial = 0f;
+                golpeEspecialActivo = false;
+            }
+        }
+
+        // Actualizar el tiempo de espera del escudo
+        if (cooldownEscudo > 0f) {
+            cooldownEscudo -= delta;
+
+            if (cooldownEscudo < 0f) {
+                cooldownEscudo = 0f;
+            }
+        }
+
+        // Actualizar duración del efecto de teletransporte
+        if (efectoTeletransporteActivo) {
+            tiempoEfectoTeletransporte -= delta;
+
+            if (tiempoEfectoTeletransporte <= 0f) {
+                tiempoEfectoTeletransporte = 0f;
+                efectoTeletransporteActivo = false;
+            }
+        }
+
+        // Mover las flechas del Arquero
+        for (int i = flechas.size() - 1; i >= 0; i--) {
+            Flecha flecha = flechas.get(i);
+
+            flecha.actualizar(delta);
+
+            // Eliminar flechas cuando salgan de la pantalla
+            if (flecha.getX() > Gdx.graphics.getWidth()
+                    || flecha.getX() + flecha.getAncho() < 0
+                    || flecha.getY() > Gdx.graphics.getHeight()
+                    || flecha.getY() + flecha.getAlto() < 0) {
+
+                flechas.remove(i);
+            }
+        }
+
+        // Mover las ondas de espada del Guerrero
+        for (int i = ondasEspada.size() - 1; i >= 0; i--) {
+            ProyectilMagico onda = ondasEspada.get(i);
+
+            onda.actualizar(delta);
+
+            // Eliminar la onda cuando salga de la pantalla
+            if (onda.getX() > Gdx.graphics.getWidth()
+                    || onda.getX() + onda.getAncho() < 0) {
+
+                ondasEspada.remove(i);
+            }
+        }
+
+        // Mover los proyectiles mágicos del Mago
+        for (int i = proyectilesMagicos.size() - 1; i >= 0; i--) {
+            ProyectilMagico proyectil = proyectilesMagicos.get(i);
+
+            proyectil.actualizar(delta);
+
+            // Eliminar proyectiles que salen de la pantalla
+            if (proyectil.getX() > Gdx.graphics.getWidth()
+                    || proyectil.getX() + proyectil.getAncho() < 0) {
+                proyectilesMagicos.remove(i);
+            }
+        }
 
         // Actualizar movimiento y stamina
         jugador.actualizar(
@@ -210,72 +579,10 @@ public class PantallaJuego implements Screen {
             return;
         }
 
-        // Detectar colisión con la poción
-        if (!pocion.estaRecogida()) {
-            boolean colision =
-                jugador.getX() < pocion.getX() + pocion.getAncho() &&
-                jugador.getX() + jugador.getAncho() > pocion.getX() &&
-                jugador.getY() < pocion.getY() + pocion.getAlto() &&
-                jugador.getY() + jugador.getAlto() > pocion.getY();
-
-            if (colision) {
-                pocion.recoger(jugador);
-                System.out.println("¡Poción recogida! +50 de stamina");
-            }
-        }
-
-        // Detectar colisión con las botas de velocidad
-        if (!botas.estanRecogidas()) {
-            boolean colisionBotas =
-                jugador.getX() < botas.getX() + botas.getAncho() &&
-                jugador.getX() + jugador.getAncho() > botas.getX() &&
-                jugador.getY() < botas.getY() + botas.getAlto() &&
-                jugador.getY() + jugador.getAlto() > botas.getY();
-
-            if (colisionBotas) {
-                botas.recoger(jugador);
-                System.out.println("¡Botas recogidas! Velocidad extra durante 5 segundos");
-            }
-        }
-
-        // Detectar colisión con la pluma de doble salto
-        if (!pluma.estaRecogida()) {
-            boolean colisionPluma =
-                jugador.getX() < pluma.getX() + pluma.getAncho() &&
-                jugador.getX() + jugador.getAncho() > pluma.getX() &&
-                jugador.getY() < pluma.getY() + pluma.getAlto() &&
-                jugador.getY() + jugador.getAlto() > pluma.getY();
-
-            if (colisionPluma) {
-                pluma.recoger(jugador);
-                System.out.println("¡Pluma recogida! Doble salto durante 10 segundos");
-            }
-        }
-
-        // Detectar colisión con el escudo protector
-        if (!escudo.estaRecogido()) {
-            boolean colisionEscudo =
-                jugador.getX() < escudo.getX() + escudo.getAncho() &&
-                jugador.getX() + jugador.getAncho() > escudo.getX() &&
-                jugador.getY() < escudo.getY() + escudo.getAlto() &&
-                jugador.getY() + jugador.getAlto() > escudo.getY();
-
-            if (colisionEscudo) {
-                escudo.recoger(jugador);
-                System.out.println("¡Escudo recogido! Protección activada");
-            }
-        }
-
-        // Detectar colisión con el corazón de curación
-        if (!corazonVida.estaRecogido()) {
-            boolean colisionCorazon =
-                jugador.getX() < corazonVida.getX() + corazonVida.getAncho() &&
-                jugador.getX() + jugador.getAncho() > corazonVida.getX() &&
-                jugador.getY() < corazonVida.getY() + corazonVida.getAlto() &&
-                jugador.getY() + jugador.getAlto() > corazonVida.getY();
-
-            if (colisionCorazon) {
-                corazonVida.recoger(jugador);
+        // Detectar colisiones de todos los power-ups
+        for (Item item : items) {
+            if (!item.estaRecogido() && hayColision(item)) {
+                item.recoger(jugador);
             }
         }
 
@@ -289,16 +596,161 @@ public class PantallaJuego implements Screen {
         escenario.dibujar(shapeRenderer, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         shapeRenderer.end();
 
+        // Mostrar temporalmente el área del golpe especial
+        if (golpeEspecialActivo) {
+
+            float golpeX;
+
+            if (jugador.estaMirandoDerecha()) {
+                golpeX = jugador.getX() + jugador.getAncho();
+            } else {
+                golpeX = jugador.getX() - alcanceGolpeEspecial;
+            }
+
+            float golpeY = jugador.getY()
+                + (jugador.getAlto() - alturaGolpeEspecial) / 2f;
+
+            shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+            shapeRenderer.setColor(Color.RED);
+
+            shapeRenderer.rect(
+                golpeX,
+                golpeY,
+                alcanceGolpeEspecial,
+                alturaGolpeEspecial
+            );
+
+            shapeRenderer.end();
+        }
+
+        // Dibujar las flechas del Arquero
+        if (!flechas.isEmpty()) {
+            shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+            shapeRenderer.setColor(Color.ORANGE);
+
+            for (Flecha flecha : flechas) {
+                shapeRenderer.rect(
+                    flecha.getX(),
+                    flecha.getY(),
+                    flecha.getAncho(),
+                    flecha.getAlto()
+                );
+            }
+
+            shapeRenderer.end();
+        }
+
+        // Dibujar la explosión mágica del Mago
+        if (explosionMagicaActiva) {
+            float centroX = jugador.getX() + jugador.getAncho() / 2f;
+            float centroY = jugador.getY() + jugador.getAlto() / 2f;
+
+            shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+            shapeRenderer.setColor(Color.MAGENTA);
+
+            shapeRenderer.circle(
+                centroX,
+                centroY,
+                radioExplosionMagica
+            );
+
+            shapeRenderer.end();
+        }
+
+        // Dibujar las ondas de espada del Guerrero
+        if (!ondasEspada.isEmpty()) {
+            shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+            shapeRenderer.setColor(Color.YELLOW);
+
+            for (ProyectilMagico onda : ondasEspada) {
+
+                // Onda vertical del tamaño del personaje
+                shapeRenderer.rect(
+                    onda.getX(),
+                    onda.getY() - 20f,
+                    35f,
+                    jugador.getAlto()
+                );
+            }
+
+            shapeRenderer.end();
+        }
+
+        // Dibujar los proyectiles mágicos del Mago
+        if (!proyectilesMagicos.isEmpty() || efectoTeletransporteActivo) {
+            shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+            shapeRenderer.setColor(Color.CYAN);
+
+            for (ProyectilMagico proyectil : proyectilesMagicos) {
+                shapeRenderer.rect(
+                    proyectil.getX(),
+                    proyectil.getY(),
+                    proyectil.getAncho(),
+                    proyectil.getAlto()
+                );
+            }
+            
+            // Destello mágico del teletransporte del Mago
+            if (efectoTeletransporteActivo && personajeSeleccionado == 2) {
+
+                float centroX = jugador.getX() + jugador.getAncho() / 2f;
+                float centroY = jugador.getY() + jugador.getAlto() / 2f;
+
+                float progreso = tiempoEfectoTeletransporte
+                        / duracionEfectoTeletransporte;
+
+                float radio = 85f * progreso;
+
+                // Dibujar dos anillos mágicos
+                shapeRenderer.end();
+                shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
+
+                // Anillo violeta exterior con grosor
+                shapeRenderer.setColor(Color.PURPLE);
+
+                for (int i = 0; i < 4; i++) {
+                    shapeRenderer.circle(centroX, centroY, radio - i, 64);
+                }
+
+                // Anillo celeste interior con grosor
+                shapeRenderer.setColor(Color.CYAN);
+
+                for (int i = 0; i < 4; i++) {
+                    shapeRenderer.circle(centroX, centroY, radio * 0.65f - i, 64);
+                }
+
+                // Partículas mágicas alrededor del teletransporte
+                shapeRenderer.setColor(Color.YELLOW);
+
+                for (int i = 0; i < 8; i++) {
+                    float angulo = i * 45f;
+
+                    float particulaX = centroX
+                            + (float) Math.cos(Math.toRadians(angulo)) * radio;
+
+                    float particulaY = centroY
+                            + (float) Math.sin(Math.toRadians(angulo)) * radio;
+
+                    shapeRenderer.circle(particulaX, particulaY, 4f, 16);
+                }
+
+                // Restaurar el modo de dibujo para los demás efectos
+                shapeRenderer.end();
+                shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+            }
+
+            shapeRenderer.end();
+        }
+
         // Dibujar personaje, ítems y barras de estado
         batch.begin();
         batch.setColor(Color.WHITE);
 
         jugador.render(batch);
-        pocion.render(batch);
-        corazonVida.render(batch);
-        botas.render(batch);
-        pluma.render(batch);
-        escudo.render(batch);
+
+        for (Item item : items) {
+            item.render(batch);
+        }       
 
         // Dibujar corazones de vida arriba a la izquierda
         float corazonSize = 28f;
@@ -345,56 +797,112 @@ public class PantallaJuego implements Screen {
         batch.draw(barraTexture, barraX, barraY, barraAncho * porcentajeStamina, barraAlto);
         batch.setColor(Color.WHITE);
 
-        // Mostrar barra mientras las botas estén activas
+       // Indicador de recarga del ataque especial
+        float progresoEspecial = 1f - Math.max(
+            0f, cooldownAtaqueEspecial
+        ) / duracionCooldownAtaqueEspecial;
+
+        // Fondo oscuro del indicador
+        batch.setColor(Color.DARK_GRAY);
+        batch.draw(barraTexture, 20f, 20f, 40f, 40f);
+
+        // Relleno que crece mientras se recarga
+        if (ataqueEspecialDisponible) {
+            batch.setColor(Color.GREEN);
+        } else {
+            batch.setColor(Color.ORANGE);
+        }
+
+        batch.draw(
+            barraTexture,
+            20f, 20f,
+            40f, 40f * progresoEspecial
+        );
+
+        batch.setColor(Color.WHITE);
+
+      // HUD de power-ups activos: cuadritos 
+        float slotX = 20f;
+        float slotY = Gdx.graphics.getHeight() - 155f;
+        float slotSize = 38f;
+        float separacion = 8f;
+
+        // BOTAS: cuadrito amarillo con duración
         if (jugador.tieneBotasActivas()) {
-            float porcentajeBotas = jugador.getTiempoBotasRestante() / 5f;
-            float botasBarraX = 20f;
-            float botasBarraY = Gdx.graphics.getHeight() - 107f;
+            float progreso = Math.max(0f,
+                Math.min(1f, jugador.getTiempoBotasRestante() / 5f));
 
             batch.setColor(Color.DARK_GRAY);
-            batch.draw(barraTexture, botasBarraX, botasBarraY, 200f, 12f);
+            batch.draw(barraTexture, slotX, slotY, slotSize, slotSize);
 
             batch.setColor(Color.YELLOW);
-            batch.draw(barraTexture, botasBarraX, botasBarraY, 200f * porcentajeBotas, 12f);
-            batch.setColor(Color.WHITE);
+            batch.draw(barraTexture, slotX + 4f, slotY + 8f, 30f, 26f);
+
+            batch.setColor(Color.ORANGE);
+            batch.draw(barraTexture, slotX, slotY, slotSize * progreso, 5f);
+
+            slotX += slotSize + separacion;
         }
 
-        // Barra de duración de la pluma de doble salto
+        // PLUMA: cuadrito morado con duración
         if (jugador.tieneDobleSaltoActivo()) {
-            float porcentajePluma = jugador.getTiempoDobleSaltoRestante() / 10f;
-            float plumaBarraX = 20f;
-            float plumaBarraY = Gdx.graphics.getHeight() - (jugador.tieneBotasActivas() ? 127f : 107f);
+            float progreso = Math.max(0f,
+                Math.min(1f, jugador.getTiempoDobleSaltoRestante() / 10f));
 
             batch.setColor(Color.DARK_GRAY);
-            batch.draw(barraTexture, plumaBarraX, plumaBarraY, 200f, 12f);
+            batch.draw(barraTexture, slotX, slotY, slotSize, slotSize);
 
             batch.setColor(Color.MAGENTA);
-            batch.draw(barraTexture, plumaBarraX, plumaBarraY, 200f * porcentajePluma, 12f);
-            batch.setColor(Color.WHITE);
+            batch.draw(barraTexture, slotX + 4f, slotY + 8f, 30f, 26f);
+
+            batch.setColor(Color.PINK);
+            batch.draw(barraTexture, slotX, slotY, slotSize * progreso, 5f);
+
+            slotX += slotSize + separacion;
         }
 
-        // Indicador visual del escudo protector
+        // ESCUDO: cuadrito azul mientras esté activo
         if (jugador.tieneEscudoActivo()) {
-            float escudoBarraX = 20f;
-            float escudoBarraY = Gdx.graphics.getHeight() - 107f;
-
-            if (jugador.tieneBotasActivas()) {
-                escudoBarraY -= 20f;
-            }
-            if (jugador.tieneDobleSaltoActivo()) {
-                escudoBarraY -= 20f;
-            }
+            batch.setColor(Color.DARK_GRAY);
+            batch.draw(barraTexture, slotX, slotY, slotSize, slotSize);
 
             batch.setColor(Color.BLUE);
-            batch.draw(barraTexture, escudoBarraX, escudoBarraY, 200f, 12f);
-            batch.setColor(Color.WHITE);
+            batch.draw(barraTexture, slotX + 4f, slotY + 8f, 30f, 26f);
         }
+
+        // Restaurar el color original
+        batch.setColor(Color.WHITE);
+
+        // Indicador de recarga de la habilidad defensiva (Q)
+        float progresoDefensa = 1f - Math.max(
+            0f, cooldownEscudo
+        ) / duracionCooldownEscudo;
+
+        // Fondo oscuro
+        batch.setColor(Color.DARK_GRAY);
+        batch.draw(barraTexture, 70f, 20f, 40f, 40f);
+
+        // Relleno de recarga
+        if (cooldownEscudo <= 0f) {
+            batch.setColor(Color.GREEN);
+        } else {
+            batch.setColor(Color.BLUE);
+        }
+
+        batch.draw(
+            barraTexture,
+            70f, 20f,
+            40f, 40f * progresoDefensa
+        );
+
+        batch.setColor(Color.WHITE);
 
         batch.end();
 
         // Dibujar interfaz
         stage.act(Math.min(Gdx.graphics.getDeltaTime(), 1 / 30f));
         stage.draw();
+        
     }
 
     @Override
@@ -419,8 +927,8 @@ public class PantallaJuego implements Screen {
         if (jugador != null) {
             jugador.dispose();
         }
-        if (pocion != null) {
-            pocion.dispose();
+        for (Item item : items) {
+            item.dispose();
         }
         if (barraTexture != null) {
             barraTexture.dispose();
@@ -428,11 +936,6 @@ public class PantallaJuego implements Screen {
         if (corazonTexture != null && corazonTexture != barraTexture) {
             corazonTexture.dispose();
         }
-        if (escudo != null) {
-            escudo.dispose();
-        }
-        if (corazonVida != null) {
-            corazonVida.dispose();
-        }
+        
     }
 }
